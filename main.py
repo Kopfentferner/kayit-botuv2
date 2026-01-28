@@ -18,14 +18,13 @@ def keep_alive():
     t = Thread(target=run)
     t.start()
 
-# --- 🔴 AYARLAR ---
-TOKEN = 'BURAYA_BOT_TOKENINI_YAZ'
+# --- 🔴 AYARLAR (ID'leri koddan, TOKEN'ı ENV'den çekiyoruz) ---
+TOKEN = os.getenv('TOKEN')  # Render Environment Variables kısmına TOKEN eklemeyi unutma!
 KAYITLI_ROL_ID = 1253327741063794771
 KAYITSIZ_ROL_ID = 1253313874342711337
-BASVURULAR_KATEGORI_ADI = "Başvurular"  # Kategorinin tam adı
-DESTEK_LOG_KANALI_ID = 1466003317426749588  # Şikayetlerin gideceği kanal
+BASVURULAR_KATEGORI_ADI = "Başvurular"
+DESTEK_LOG_KANALI_ID = 1466003317426749588
 
-# Yetki başvurularını ve destek taleplerini görecek 3 Yetkili Rol ID'si
 YETKILI_ROLLER = [
     1253285883826929810, 
     1465050726576427263, 
@@ -43,7 +42,7 @@ class TicketKapatView(discord.ui.View):
         await asyncio.sleep(5)
         await interaction.channel.delete()
 
-# --- 📝 YETKİ BAŞVURU FORMU (MODAL) ---
+# --- 📝 YETKİ BAŞVURU FORMU ---
 class YetkiBasvuruModal(discord.ui.Modal, title='Admin Başvuru Formu'):
     isim_yas = discord.ui.TextInput(label='İsim ve Yaşınız', placeholder='Örn: Ahmet, 20', required=True)
     sure = discord.ui.TextInput(label='Sunucudaki süreniz?', placeholder='Örn: 3 Ay', required=True)
@@ -57,10 +56,8 @@ class YetkiBasvuruModal(discord.ui.Modal, title='Admin Başvuru Formu'):
         if not category:
             return await interaction.response.send_message(f"❌ '{BASVURULAR_KATEGORI_ADI}' kategorisi bulunamadı!", ephemeral=True)
 
-        # Kanal sayısını bul ve yeni ismi belirle
         num = len([c for c in guild.channels if c.name.startswith("basvuru-")]) + 1
         
-        # İzinleri Ayarla
         overwrites = {
             guild.default_role: discord.PermissionOverwrite(read_messages=False),
             interaction.user: discord.PermissionOverwrite(read_messages=True, send_messages=True, read_message_history=True),
@@ -83,7 +80,7 @@ class YetkiBasvuruModal(discord.ui.Modal, title='Admin Başvuru Formu'):
         await channel.send(content=yetkili_mention, embed=embed, view=TicketKapatView())
         await interaction.response.send_message(f"✅ Başvurunuz alındı: {channel.mention}", ephemeral=True)
 
-# --- 📩 DESTEK SİSTEMİ MODALLARI ---
+# --- 📩 DESTEK SİSTEMİ ---
 class SikayetModal(discord.ui.Modal, title='Şikayet Et'):
     kisi = discord.ui.TextInput(label='Kimi Şikayet Ediyorsun?', required=True)
     sebep = discord.ui.TextInput(label='Sebep', style=discord.TextStyle.paragraph, required=True)
@@ -96,7 +93,7 @@ class SikayetModal(discord.ui.Modal, title='Şikayet Et'):
         await channel.send(embed=embed)
         await interaction.response.send_message("✅ Şikayetiniz log kanalına iletildi.", ephemeral=True)
 
-# --- 🔘 ANA MENÜ GÖRÜNÜMÜ ---
+# --- 🔘 ANA MENÜ ---
 class AnaMenu(discord.ui.View):
     def __init__(self):
         super().__init__(timeout=None)
