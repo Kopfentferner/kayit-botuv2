@@ -18,31 +18,31 @@ def keep_alive():
     t = Thread(target=run)
     t.start()
 
-# --- 🔴 AYARLAR (ID'leri koddan, TOKEN'ı ENV'den çekiyoruz) ---
-TOKEN = os.getenv('TOKEN')  # Render Environment Variables kısmına TOKEN eklemeyi unutma!
+# --- 🔴 AYARLAR ---
+TOKEN = os.getenv('TOKEN') 
 KAYITLI_ROL_ID = 1253327741063794771
 KAYITSIZ_ROL_ID = 1253313874342711337
 BASVURULAR_KATEGORI_ADI = "Başvurular"
-DESTEK_LOG_KANALI_ID = 1466003317426749588
 
+# Yetki başvurularını görecek olan roller
 YETKILI_ROLLER = [
     1253285883826929810, 
     1465050726576427263, 
     1465056480871845949
 ]
 
-# --- 🔒 TICKET KAPATMA BUTONU ---
+# --- 🔒 BAŞVURU KANALI KAPATMA BUTONU ---
 class TicketKapatView(discord.ui.View):
     def __init__(self):
         super().__init__(timeout=None)
 
-    @discord.ui.button(label="Talebi Kapat & Sil", style=discord.ButtonStyle.danger, emoji="🔒", custom_id="btn_kapat")
+    @discord.ui.button(label="Başvuruyu Kapat & Sil", style=discord.ButtonStyle.danger, emoji="🔒", custom_id="btn_kapat")
     async def kapat_button(self, interaction: discord.Interaction, button: discord.ui.Button):
         await interaction.response.send_message("Kanal 5 saniye içinde siliniyor...", ephemeral=True)
         await asyncio.sleep(5)
         await interaction.channel.delete()
 
-# --- 📝 YETKİ BAŞVURU FORMU ---
+# --- 📝 YETKİ BAŞVURU FORMU (MODAL) ---
 class YetkiBasvuruModal(discord.ui.Modal, title='Admin Başvuru Formu'):
     isim_yas = discord.ui.TextInput(label='İsim ve Yaşınız', placeholder='Örn: Ahmet, 20', required=True)
     sure = discord.ui.TextInput(label='Sunucudaki süreniz?', placeholder='Örn: 3 Ay', required=True)
@@ -80,19 +80,6 @@ class YetkiBasvuruModal(discord.ui.Modal, title='Admin Başvuru Formu'):
         await channel.send(content=yetkili_mention, embed=embed, view=TicketKapatView())
         await interaction.response.send_message(f"✅ Başvurunuz alındı: {channel.mention}", ephemeral=True)
 
-# --- 📩 DESTEK SİSTEMİ ---
-class SikayetModal(discord.ui.Modal, title='Şikayet Et'):
-    kisi = discord.ui.TextInput(label='Kimi Şikayet Ediyorsun?', required=True)
-    sebep = discord.ui.TextInput(label='Sebep', style=discord.TextStyle.paragraph, required=True)
-    async def on_submit(self, interaction: discord.Interaction):
-        channel = interaction.guild.get_channel(DESTEK_LOG_KANALI_ID)
-        embed = discord.Embed(title="🚨 Yeni Şikayet", color=discord.Color.red())
-        embed.add_field(name="Şikayetçi", value=interaction.user.mention)
-        embed.add_field(name="Şikayet Edilen", value=self.kisi.value)
-        embed.add_field(name="Sebep", value=self.sebep.value)
-        await channel.send(embed=embed)
-        await interaction.response.send_message("✅ Şikayetiniz log kanalına iletildi.", ephemeral=True)
-
 # --- 🔘 ANA MENÜ ---
 class AnaMenu(discord.ui.View):
     def __init__(self):
@@ -101,10 +88,6 @@ class AnaMenu(discord.ui.View):
     @discord.ui.button(label="Admin Başvuru", style=discord.ButtonStyle.success, emoji="📩", custom_id="btn_admin")
     async def admin_btn(self, interaction: discord.Interaction, button: discord.ui.Button):
         await interaction.response.send_modal(YetkiBasvuruModal())
-
-    @discord.ui.button(label="Şikayet Et", style=discord.ButtonStyle.danger, emoji="🚨", custom_id="btn_sikayet")
-    async def sikayet_btn(self, interaction: discord.Interaction, button: discord.ui.Button):
-        await interaction.response.send_modal(SikayetModal())
 
 # --- 🤖 BOT SINIFI ---
 class MyBot(commands.Bot):
@@ -124,7 +107,11 @@ bot = MyBot()
 @bot.command()
 @commands.has_permissions(administrator=True)
 async def sistem_kur(ctx):
-    embed = discord.Embed(title="Pro-Pub Sunucu Yönetim Paneli", description="Aşağıdaki butonları kullanarak işlem yapabilirsiniz.", color=discord.Color.gold())
+    embed = discord.Embed(
+        title="Admin Başvuru Paneli", 
+        description="Yetki başvurusunda bulunmak için aşağıdaki butona tıklayın.", 
+        color=discord.Color.green()
+    )
     await ctx.send(embed=embed, view=AnaMenu())
 
 @bot.command()
@@ -140,6 +127,5 @@ async def kayıt(ctx, isim=None, yas=None):
     except Exception as e:
         await ctx.send("❌ Yetki hatası: Botun rolü en üstte olmalı.")
 
-# Botu Çalıştır
 keep_alive()
 bot.run(TOKEN)
